@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace TextRenderer
 {
@@ -64,17 +65,24 @@ namespace TextRenderer
             List<string> _texts = new List<string>();
             _texts = new List<string>
             {
-                "This is you. Run around with WASD keys to get near and help the robots that are rebooting.",
+                "This is you.", 
+                "Run around with WASD keys to get near and help the robots that are rebooting.",
                 "Be aware of the healthbar above your head, if it depletes, the game is over.",
-                "When bad robots are near, you take damage. When good robots are near, you heal up.",
-                "Every 10 score point earns you an upgrade. Choose between an increase in speed, health, rebooting speed, or healing amount.",
+                "When bad robots are near, you take damage. When good robots are near, you heal up...W",
+                "Every 10 score point earns you an upgrade.", 
+                "Choose between an increase in speed, health, rebooting speed, or healing amount."
             };
 
-            _textRenderer.CondenseLetterSpacing(3);
+            _textRenderer.CondenseLetterSpacing(2);
             _textRenderer.SetFontScale(2);
-            foreach (var text in _texts)
-                _textRenderer.DrawString(text, new Vector2(_screenX / 2 - _textRenderer.MeasureString(text).Width / 2, _screenY / 2 - _textRenderer.MeasureString(text).Height / 2 + _texts.IndexOf(text) * 16));
+            //foreach (var text in _texts)
+              //  _textRenderer.DrawString(text, new Vector2(_screenX / 2 - _textRenderer.MeasureString(text).Width / 2, _screenY / 2 - _textRenderer.MeasureString(text).Height / 2 + _texts.IndexOf(text) * 16));
 
+            _textRenderer.DrawStringWrapAround(
+                "This is you. Run around with WASD keys to get near and help robots that are rebooting. Be aware of the healthbar above your head, if it depletes, the game is over. When bad robots are near, you take damage. When good robots are near, you heal up. Every 10 score points earn you an upgrade. Choose between an increase in speed, health, rebooting speed or healing amount." +
+                "This is you. Run around with WASD keys to get near and help robots that are rebooting. Be aware of the healthbar above your head, if it depletes, the game is over. When bad robots are near, you take damage. When good robots are near, you heal up. Every 10 score points earn you an upgrade. Choose between an increase in speed, health, rebooting speed or healing amount.",
+                new Vector2(_screenX / 4, 100), _screenX / 4 * 2
+                );
             _spriteBatch.End();
 
             base.Draw(gameTime);
