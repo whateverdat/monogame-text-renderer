@@ -54,7 +54,7 @@ namespace TextRenderer
         /// <exception cref="Exception">Difference between each value determines the number of characters in the atlas.</exception>
         public void SetAsciiRange(int startAt, int endAt)
         {
-            if (_asciiStartAt >= _asciiEndAt) throw new Exception("Range for allowed ascii range cannot be negative or 0.");
+            if (_asciiStartAt >= _asciiEndAt) throw new Exception("Range for allowed ascii characters cannot be negative or 0.");
             else
             {
                 _asciiStartAt = startAt;
@@ -110,7 +110,7 @@ namespace TextRenderer
         {
             if (scale > 0)
                 _fontScale = scale;
-            else throw new Exception("Font scale cannot be lower than 1.");
+            else throw new Exception("Font scale cannot be lower than 1 since it is used as a factor for the texture size.");
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace TextRenderer
                 try
                 {
                     if (punctuationRects.Count != punctuations.Length)
-                        throw new Exception("Some of the puncuations provided does not exist in the atlas. Hyphenation might not work as intended.");
+                        throw new Exception("Some of the puncuations provided do not exist in the atlas. Hyphenation might not work as intended.");
                 } 
                 catch (Exception e) 
                 {
