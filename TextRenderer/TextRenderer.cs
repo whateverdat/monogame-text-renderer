@@ -130,10 +130,7 @@ namespace TextRenderer
         }
 
         /// <summary>
-        /// Given a string and a max width, text will wrap around in case of going beyond that max width.
-        /// Per default behaviour:
-        ///     When hyphenation occurs, a hyphen will be placed at the end of the line.
-        ///     When a new line's first character is a space, it will be ommited.
+        /// When the text that is being rendered exceeds the given max width, wrap around to a new line and continue.
         /// </summary>
         /// <param name="text"></param>
         /// <param name="position"></param>
@@ -142,27 +139,129 @@ namespace TextRenderer
         {
             if (MeasureString(text).Width > maxWidth)
             {
-                StoreString(" ?.,-");
+                StoreString(" ");
+                ParseString(text);
+                int currentLineWidth = 0;
+                int initialX = (int)position.X;
+
+                Queue<Rectangle> wordQ = new Queue<Rectangle>();
+
+                while (_drawQ.Count > 0)
+                {
+                    while(_drawQ.Count > 0 && _drawQ.Peek() != _storedPositions[' '])
+                    {
+                        wordQ.Enqueue(_drawQ.Dequeue());
+                    }
+                    int spacePerChar = _fontWidth * _fontScale - _letterSpacing * _fontScale;
+                    int spaceUsedForWord = spacePerChar * wordQ.Count;
+                    if (currentLineWidth + spaceUsedForWord <= maxWidth)
+                    {
+                        while (wordQ.Count > 0)
+                        {
+                            _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), wordQ.Dequeue(), Color.White);
+                            position.X += spacePerChar;
+                        }
+                    }
+                    else
+                    {
+                        position.Y += _fontWidth * _fontScale;
+                        position.X = initialX;
+                        currentLineWidth = 0;
+                        while (wordQ.Count > 0)
+                        {
+                            _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), wordQ.Dequeue(), Color.White);
+                            position.X += spacePerChar;
+                        }
+                    }
+                    currentLineWidth += spaceUsedForWord;
+                    if (_drawQ.Count > 0)
+                    {
+                        _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), _drawQ.Dequeue(), Color.White);
+                        position.X += spacePerChar;
+                        currentLineWidth += spacePerChar;
+                    }
+
+                }
+            }
+            else DrawString(text, position);
+
+        }
+
+        /// <summary>
+        /// Similar to DrawStringWrapAround(), but the words will be hyphenated. Make sure you atlas has hyphen and space included.
+        /// Per default behaviour:
+        ///     When hyphenation occurs, a hyphen will be placed at the end of the line.
+        ///     When a new line's first character is a space, it will be ommited.
+        ///     When provided punctuations, these characters will not cause hyhenation, instead, they will be placed where hyphenation goes.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="position"></param>
+        /// <param name="maxWidth"></param>
+        public void DrawStringWrapAroundHyphenate(string text, Vector2 position, int maxWidth, string punctuations = "")
+        {
+            if (MeasureString(text).Width > maxWidth)
+            {
+                StoreString(" -");
+                try
+                {
+                    if (!_storedPositions.TryGetValue('-', out Rectangle r) || !_storedPositions.TryGetValue(' ', out Rectangle r2))
+                        throw new Exception("Cannot hyphenate since atlas does not contain hyphen and/or space.");
+                }
+                catch (Exception e) 
+                {
+                    Debug.WriteLine(e);
+                    return;
+                }
+
+                List<Rectangle> punctuationRects = StoreString(punctuations);
+                try
+                {
+                    if (punctuationRects.Count != punctuations.Length)
+                        throw new Exception("Some of the puncuations provided does not exist in the atlas. Hyphenation might not work as intended.");
+                } 
+                catch (Exception e) 
+                {
+                    Debug.WriteLine(e);
+                }
 
                 ParseString(text);
 
                 int currentLineWidth = 0;
                 int initialX = (int)position.X;
-
+                bool prevWasSpace = false;
                 while (_drawQ.Count > 0)
                 {
+                    int spaceUsed = _fontWidth * _fontScale - _letterSpacing * _fontScale;
                     if (currentLineWidth == 0 && _drawQ.Peek() == _storedPositions[' '])
                     {
                         _drawQ.Dequeue();
                         continue;
                     }
-
-                    int spaceUsed = _fontWidth * _fontScale - _letterSpacing * _fontScale;
                     currentLineWidth += spaceUsed;
+
                     if (currentLineWidth >= maxWidth - spaceUsed)
                     {
                         if (_drawQ.Peek() != _storedPositions[' '])
-                            _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), _storedPositions['-'], Color.White);
+                        {
+                            if (!prevWasSpace)
+                            {
+                                if (!punctuationRects.Contains(_drawQ.Peek()))
+                                    _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), _storedPositions['-'], Color.White);
+                                else
+                                {
+                                    _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), _drawQ.Peek(), Color.White);
+                                    position.Y += _fontWidth * _fontScale;
+                                    position.X = initialX;
+                                    currentLineWidth = 0;
+                                    _drawQ.Dequeue();
+                                    continue;
+                                }
+                            }
+                            
+                            position.Y += _fontWidth * _fontScale;
+                            position.X = initialX;
+                            currentLineWidth = spaceUsed;
+                        }
                         else
                         {
                             position.Y += _fontWidth * _fontScale;
@@ -171,16 +270,14 @@ namespace TextRenderer
                             _drawQ.Dequeue();
                             continue;
                         }
-
-                        position.Y += _fontWidth * _fontScale;
-                        position.X = initialX;
-                        currentLineWidth = spaceUsed; ;
                     }
                     _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), _drawQ.Peek(), Color.White);
                     position.X += spaceUsed;
+                    if (_drawQ.Peek() == _storedPositions[' '])
+                        prevWasSpace = true;
+                    else prevWasSpace = false;
                     _drawQ.Dequeue();
                 }
-
             } else DrawString(text, position);
         }
 
@@ -199,7 +296,7 @@ namespace TextRenderer
 
                     try
                     {
-                        if (charPosition < 0 || charPosition > 95) throw new Exception("Only ascii from" + _asciiStartAt + (char)_asciiStartAt + " to " + _asciiEndAt + (char)_asciiEndAt + " allowed.");
+                        if (charPosition < 0 || charPosition > 95) throw new Exception("Only ascii from " + _asciiStartAt + (char)_asciiStartAt + " to " + _asciiEndAt + (char)_asciiEndAt + " allowed.");
                     }
                     catch (Exception e)
                     {
@@ -219,8 +316,9 @@ namespace TextRenderer
         /// Given a string, creates position stores for each character in the string.
         /// </summary>
         /// <param name="text"></param>
-        private void StoreString(string text)
+        private List<Rectangle> StoreString(string text)
         {
+            List<Rectangle> storedChars = new List<Rectangle> ();
             foreach (char c in text)
                 if (!_storedPositions.TryGetValue(c, out Rectangle rect))
                 {
@@ -228,7 +326,7 @@ namespace TextRenderer
 
                     try
                     {
-                        if (charPosition < 0 || charPosition > 95) throw new Exception("Only ascii from" + _asciiStartAt + (char)_asciiStartAt + " to " + _asciiEndAt + (char)_asciiEndAt + " allowed.");
+                        if (charPosition < 0 || charPosition > 95) throw new Exception("Only ascii from " + _asciiStartAt + (char)_asciiStartAt + " to " + _asciiEndAt + (char)_asciiEndAt + " allowed.");
                     }
                     catch (Exception e)
                     {
@@ -237,7 +335,10 @@ namespace TextRenderer
                     }
                     Rectangle targetRectangle = GetTargetRectangle(charPosition);
                     _storedPositions.Add(c, targetRectangle);
-                }
+                    storedChars.Add(targetRectangle);
+                } else if (!storedChars.Contains(rect))
+                    storedChars.Add(rect);
+            return storedChars;
         }
 
         /// <summary>

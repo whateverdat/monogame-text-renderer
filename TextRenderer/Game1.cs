@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -76,16 +77,55 @@ namespace TextRenderer
             _textRenderer.CondenseLetterSpacing(2);
             _textRenderer.SetFontScale(2);
             //foreach (var text in _texts)
-              //  _textRenderer.DrawString(text, new Vector2(_screenX / 2 - _textRenderer.MeasureString(text).Width / 2, _screenY / 2 - _textRenderer.MeasureString(text).Height / 2 + _texts.IndexOf(text) * 16));
+            //  _textRenderer.DrawString(text, new Vector2(_screenX / 2 - _textRenderer.MeasureString(text).Width / 2, _screenY / 2 - _textRenderer.MeasureString(text).Height / 2 + _texts.IndexOf(text) * 16));
 
+            DrawLineBetween(_spriteBatch, new Vector2(_screenX / 4, 100), new Vector2(_screenX / 4 + _screenX / 4 * 2, 100), 1600, Color.White);
             _textRenderer.DrawStringWrapAround(
                 "This is you. Run around with WASD keys to get near and help robots that are rebooting. Be aware of the healthbar above your head, if it depletes, the game is over. When bad robots are near, you take damage. When good robots are near, you heal up. Every 10 score points earn you an upgrade. Choose between an increase in speed, health, rebooting speed or healing amount." +
-                "This is you. Run around with WASD keys to get near and help robots that are rebooting. Be aware of the healthbar above your head, if it depletes, the game is over. When bad robots are near, you take damage. When good robots are near, you heal up. Every 10 score points earn you an upgrade. Choose between an increase in speed, health, rebooting speed or healing amount.",
+                "This is you. Run around with WASD keys to get near and help robots that are rebooting? Be aware of the healthbar above your head, if it depletes, the game is over. When bad robots are near, you take damage. When good robots are near, you heal up. Every 10 score points earn you an upgrade. Choose between an increase in speed, health, rebooting speed or healing amount.",
                 new Vector2(_screenX / 4, 100), _screenX / 4 * 2
                 );
             _spriteBatch.End();
 
             base.Draw(gameTime);
         }
+
+        public static void DrawLineBetween(
+            SpriteBatch spriteBatch,
+            Vector2 startPos,
+            Vector2 endPos,
+            int thickness,
+            Color color
+            )
+        {
+            // Create a texture as wide as the distance between two points and as high as
+            // the desired thickness of the line.
+            var distance = (int)Vector2.Distance(startPos, endPos);
+            var texture = new Texture2D(spriteBatch.GraphicsDevice, distance, thickness);
+
+            // Fill texture with given color.
+            var data = new Color[distance * thickness];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = color;
+            }
+            texture.SetData(data);
+
+            // Rotate about the beginning middle of the line.
+            var rotation = (float)Math.Atan2(endPos.Y - startPos.Y, endPos.X - startPos.X);
+            var origin = new Vector2(0, thickness / 2);
+
+            spriteBatch.Draw(
+                texture,
+                startPos,
+                null,
+                Color.White,
+                rotation,
+                origin,
+                1.0f,
+                SpriteEffects.None,
+                1.0f);
+        }
+
     }
 }
