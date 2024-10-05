@@ -143,6 +143,7 @@ namespace TextRenderer
                 ParseString(text);
                 int currentLineWidth = 0;
                 int initialX = (int)position.X;
+                int spacePerChar = _fontWidth * _fontScale - _letterSpacing * _fontScale;
 
                 Queue<Rectangle> wordQ = new Queue<Rectangle>();
 
@@ -152,8 +153,18 @@ namespace TextRenderer
                     {
                         wordQ.Enqueue(_drawQ.Dequeue());
                     }
-                    int spacePerChar = _fontWidth * _fontScale - _letterSpacing * _fontScale;
                     int spaceUsedForWord = spacePerChar * wordQ.Count;
+
+                    try
+                    {
+                        if (spaceUsedForWord > maxWidth) throw new Exception("The string contains a word that alone exceeds the given max width. Use DrawStringWrapAroundHyphenate() instead.");
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine(e);
+                        return;
+                    }
+
                     if (currentLineWidth + spaceUsedForWord <= maxWidth)
                     {
                         while (wordQ.Count > 0)
@@ -185,6 +196,82 @@ namespace TextRenderer
             }
             else DrawString(text, position);
 
+        }
+
+        /// <summary>
+        /// Similar to DrawStringWrapAround(), but also centers each line.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="position"></param>
+        /// <param name="maxWidth"></param>
+        public void DrawStringWrapAroundCentered(string text, Vector2 position, int maxWidth)
+        {
+            StoreString(" ");
+            ParseString(text);
+            int currentLineWidth = 0;
+            int initialX = (int)position.X;
+            int spacePerChar = _fontWidth * _fontScale - _letterSpacing * _fontScale;
+            
+            Queue<Rectangle> wordQ = new Queue<Rectangle>();
+            Queue<Rectangle> lineQ = new Queue<Rectangle>();
+            
+            while (_drawQ.Count > 0)
+            {
+                int spaceUsedForWord;
+                while (_drawQ.Count > 0 && _drawQ.Peek() != _storedPositions[' '])
+                {
+                    wordQ.Enqueue(_drawQ.Dequeue());
+                }
+                spaceUsedForWord = spacePerChar * wordQ.Count;
+
+                try
+                {
+                    if (spaceUsedForWord > maxWidth) throw new Exception("The string contains a word that alone exceeds the given max width. Use DrawStringWrapAroundHyphenate() instead."); 
+                }
+                catch (Exception e) 
+                {
+                    Debug.WriteLine(e);
+                    return;
+                }
+
+                if (currentLineWidth + spaceUsedForWord <= maxWidth)
+                {
+                    while (wordQ.Count > 0)
+                    {
+                        lineQ.Enqueue(wordQ.Dequeue());
+                    }
+                    if (_drawQ.Count > 0 && _drawQ.Peek() == _storedPositions[' '])
+                    {
+                        lineQ.Enqueue(_drawQ.Dequeue());
+                        currentLineWidth += spacePerChar;
+                    }
+                    currentLineWidth += spaceUsedForWord;
+                }
+                else
+                {
+                    position.X += (maxWidth - currentLineWidth + spacePerChar / 2) / 2;
+                    while (lineQ.Count > 0)
+                    {
+                        _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), lineQ.Dequeue(), Color.White);
+                        position.X += spacePerChar;
+                    }
+                    lineQ.Clear();
+                    currentLineWidth = 0;
+                    position.X = initialX;
+                    position.Y += _fontWidth * _fontScale;
+                }
+                if (_drawQ.Count == 0) // Exit condition met, last iteration, last line 
+                {
+                    currentLineWidth = spacePerChar * wordQ.Count;
+                    position.X = initialX + (maxWidth - currentLineWidth) / 2;
+                    while (wordQ.Count > 0)
+                    {
+                        _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), wordQ.Dequeue(), Color.White);
+                        position.X += spacePerChar;
+                    }
+
+                }
+            }
         }
 
         /// <summary>
