@@ -8,7 +8,6 @@ namespace TextRenderer
 {
     internal class TextRenderer
     {
-        private SpriteBatch _spriteBatch;
         private Texture2D _texture;
 
         private Queue<Rectangle> _drawQ;
@@ -20,7 +19,6 @@ namespace TextRenderer
         private int _asciiStartAt, _asciiEndAt;
         public TextRenderer(SpriteBatch spriteBatch, Texture2D LettersSheet)
         {
-            _spriteBatch = spriteBatch;
             _texture = LettersSheet;
             _drawQ = new Queue<Rectangle>();
             _asciiStartAt = 32;
@@ -118,12 +116,12 @@ namespace TextRenderer
         /// </summary>
         /// <param name="text"></param>
         /// <param name="position"></param>
-        public void DrawString(string text, Vector2 position)
+        public void DrawString(SpriteBatch _spriteBatch, string text, Vector2 position, float transparency = 1)
         {
             ParseString(text);
             while (_drawQ.Count > 0)
             {
-                _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), _drawQ.Peek(), Color.White);
+                _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), _drawQ.Peek(), Color.White * transparency);
                 _drawQ.Dequeue();
                 position.X += _fontWidth * _fontScale - _letterSpacing * _fontScale;
             }
@@ -135,7 +133,7 @@ namespace TextRenderer
         /// <param name="text"></param>
         /// <param name="position"></param>
         /// <param name="maxWidth"></param>
-        public void DrawStringWrapAround(string text, Vector2 position, int maxWidth)
+        public void DrawStringWrapAround(SpriteBatch _spriteBatch, string text, Vector2 position, int maxWidth)
         {
             if (MeasureString(text).Width > maxWidth)
             {
@@ -194,7 +192,7 @@ namespace TextRenderer
 
                 }
             }
-            else DrawString(text, position);
+            else DrawString(_spriteBatch, text, position);
 
         }
 
@@ -204,7 +202,7 @@ namespace TextRenderer
         /// <param name="text"></param>
         /// <param name="position"></param>
         /// <param name="maxWidth"></param>
-        public void DrawStringWrapAroundCentered(string text, Vector2 position, int maxWidth)
+        public void DrawStringWrapAroundCentered(SpriteBatch _spriteBatch, string text, Vector2 position, int maxWidth)
         {
             StoreString(" ");
             ParseString(text);
@@ -262,14 +260,26 @@ namespace TextRenderer
                 }
                 if (_drawQ.Count == 0) // Exit condition met, last iteration, last line 
                 {
-                    currentLineWidth = spacePerChar * wordQ.Count;
-                    position.X = initialX + (maxWidth - currentLineWidth) / 2;
-                    while (wordQ.Count > 0)
+                    if (wordQ.Count > 0)
                     {
-                        _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), wordQ.Dequeue(), Color.White);
-                        position.X += spacePerChar;
+                        currentLineWidth = spacePerChar * wordQ.Count;
+                        position.X = initialX + (maxWidth - currentLineWidth) / 2;
+                        while (wordQ.Count > 0)
+                        {
+                            _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), wordQ.Dequeue(), Color.White);
+                            position.X += spacePerChar;
+                        }
                     }
-
+                    else if (lineQ.Count > 0)
+                    {
+                        currentLineWidth = spacePerChar * lineQ.Count;
+                        position.X = initialX + (maxWidth - currentLineWidth) / 2;
+                        while (lineQ.Count > 0)
+                        {
+                            _spriteBatch.Draw(_texture, new Rectangle((int)position.X, (int)position.Y, _fontWidth * _fontScale, _fontWidth * _fontScale), lineQ.Dequeue(), Color.White);
+                            position.X += spacePerChar;
+                        }
+                    }
                 }
             }
         }
@@ -284,7 +294,7 @@ namespace TextRenderer
         /// <param name="text"></param>
         /// <param name="position"></param>
         /// <param name="maxWidth"></param>
-        public void DrawStringWrapAroundHyphenate(string text, Vector2 position, int maxWidth, string punctuations = "")
+        public void DrawStringWrapAroundHyphenate(SpriteBatch _spriteBatch, string text, Vector2 position, int maxWidth, string punctuations = "")
         {
             if (MeasureString(text).Width > maxWidth)
             {
@@ -365,7 +375,7 @@ namespace TextRenderer
                     else prevWasSpace = false;
                     _drawQ.Dequeue();
                 }
-            } else DrawString(text, position);
+            } else DrawString(_spriteBatch, text, position);
         }
 
         /// <summary>

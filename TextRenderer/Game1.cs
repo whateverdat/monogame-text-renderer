@@ -17,6 +17,8 @@ namespace TextRenderer
         private TextRenderer _textRenderer;
         private Texture2D _lettersSheet;
 
+        private TextManager _textManager;
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -40,9 +42,14 @@ namespace TextRenderer
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            _lettersSheet = Content.Load<Texture2D>("LettersSheet");
+            _lettersSheet = Content.Load<Texture2D>("LetterAtlas");
             _textRenderer = new TextRenderer(_spriteBatch, _lettersSheet);
+            _textRenderer.SetAsciiRange(32, 151);
             _textRenderer.SetFontWidthInPixels(8);
+            _textRenderer.CondenseLetterSpacing(2);
+            _textRenderer.SetFontScale(2);
+
+            _textManager = new TextManager();
             // TODO: use this.Content to load your game content here
         }
 
@@ -63,28 +70,7 @@ namespace TextRenderer
             // TODO: Add your drawing code here
             _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            List<string> _texts = new List<string>();
-            _texts = new List<string>
-            {
-                "This is you.", 
-                "Run around with WASD keys to get near and help the robots that are rebooting.",
-                "Be aware of the healthbar above your head, if it depletes, the game is over.",
-                "When bad robots are near, you take damage. When good robots are near, you heal up...W",
-                "Every 10 score point earns you an upgrade.", 
-                "Choose between an increase in speed, health, rebooting speed, or healing amount."
-            };
-
-            _textRenderer.CondenseLetterSpacing(2);
-            _textRenderer.SetFontScale(2);
-            //foreach (var text in _texts)
-            //  _textRenderer.DrawString(text, new Vector2(_screenX / 2 - _textRenderer.MeasureString(text).Width / 2, _screenY / 2 - _textRenderer.MeasureString(text).Height / 2 + _texts.IndexOf(text) * 16));
-
-            DrawLineBetween(_spriteBatch, new Vector2(_screenX / 4, 100), new Vector2(_screenX / 4 + _screenX / 4 * 2, 100), 1600, Color.White);
-            _textRenderer.DrawStringWrapAround(
-                "1This is you. Run around with WASD keys to get near and help robots that are rebooting. Be aware of the healthbar above your head, if it depletes, the game is over. When bad robots are near, you take damage. When good robots are near, you heal up. Every 10 score points earn you an upgrade. Choose between an increase in speed, health, rebooting speed or healing amount. " +
-                "2This is you. Run around with WASD keys to get near and help robots that are rebooting? Be aware of the healthbar above your head, if it depletes, the game is over. When bad robots are near, you take damage. When good robots are near, you heal up. Every 10 score points earn you an upgrade. Choose between an increase in speed, health, rebooting speed or healing amount.",
-                new Vector2(_screenX / 4, 100), _screenX / 4 * 2
-                );
+            _textManager.TypeWriterEffect(_spriteBatch, _textRenderer, "This is a test string...", 0, new Vector2(100, 100));
             
             _spriteBatch.End();
 
